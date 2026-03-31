@@ -21,6 +21,7 @@ const PORT = process.env.PORT || 5001;
 const allowedOrigins = [
   "https://mentorque-frontend-z7tmsm21b-kabyasri1441s-projects.vercel.app",
   "https://availabilitytrackerfrontend.vercel.app",
+  "https://mentorque-frontend-taupe.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
 ];
