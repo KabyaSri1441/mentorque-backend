@@ -168,8 +168,7 @@ export async function scheduleMeeting(req, res, next) {
     }
 
     let start;
-    let end;
-    /** IANA timezone for Google Calendar (e.g. "Asia/Kolkata" or "UTC"). DB always stores UTC. */
+    let end;  
     let requestTimezone = "UTC";
 
     if (date && timezone && typeof startTime === "string" && typeof endTime === "string" && /^\d{2}:\d{2}$/.test(startTime) && /^\d{2}:\d{2}$/.test(endTime)) {
@@ -199,7 +198,6 @@ export async function scheduleMeeting(req, res, next) {
       ? participantEmails.map((e) => (typeof e === "string" ? e.trim() : "")).filter(Boolean)
       : [];
 
-    // Create meeting in DB first (meetLink null if Google not connected or fails).
     const meeting = await prisma.meeting.create({
       data: {
         id: uuidv4(),
@@ -224,7 +222,6 @@ export async function scheduleMeeting(req, res, next) {
       });
     }
 
-    // Create Google Calendar event + Meet link using GOOGLE_REFRESH_TOKEN from .env (do not break meeting creation if this fails).
     let meetLink = null;
     let googleEventId = null;
     try {

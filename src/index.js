@@ -3,12 +3,17 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
+
 import { authRoutes } from "./routes/auth.js";
-import { availabilityRoutes } from "./routes/availability.js";
 import { meetingRoutes } from "./routes/meeting.js";
 import { adminRoutes } from "./routes/admin.js";
-import { googleRouter } from "./routes/google.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+
+import usersRouter from "./routes/users.js";
+import mentorsRouter from "./routes/mentors.js";
+import availabilityRouter from "./routes/availability.js";  // ✅ only once
+import callsRouter from "./routes/calls.js";
+import callTypesRouter from "./routes/callTypes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -19,12 +24,7 @@ const allowedOrigins = [
   "http://localhost:5173",
 ];
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -36,10 +36,8 @@ app.use("/api/auth", (req, res, next) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/availability", availabilityRoutes);
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/google", googleRouter);
 
 app.get("/health", (_, res) => res.json({ ok: true }));
 
@@ -57,16 +55,20 @@ app.post("/debug-token", (req, res) => {
   try { decoded1 = jwt.verify(token, JWT_SECRET); } catch(e) { err1 = e.message; }
   try { decoded2 = jwt.verify(token, MAIN_SITE_JWT_SECRET); } catch(e) { err2 = e.message; }
 
-  const raw = jwt.decode(token);
-
   res.json({
-    raw_payload: raw,
+    raw_payload: jwt.decode(token),
     verify_with_JWT_SECRET: decoded1 || err1,
     verify_with_MAIN_SITE_JWT_SECRET: decoded2 || err2,
     JWT_SECRET_set: !!JWT_SECRET,
     MAIN_SITE_JWT_SECRET_set: !!process.env.MAIN_SITE_JWT_SECRET,
   });
 });
+
+app.use("/api/users", usersRouter);
+app.use("/api/mentors", mentorsRouter);
+app.use("/api/availability", availabilityRouter);  // ✅ only registered once
+app.use("/api/calls", callsRouter);
+app.use("/api/call-types", callTypesRouter);
 
 app.use(errorHandler);
 

@@ -20,12 +20,18 @@ model User {
   password           String
   role               Role     @default(USER)
   timezone           String   @default("UTC")
-  googleRefreshToken String?  @map("google_refresh_token")
+
+  tags        String[]
+  description String?
+
   createdAt          DateTime @default(now()) @map("created_at")
 
   availabilityAsUser   Availability[] @relation("UserAvailability")
   availabilityAsMentor Availability[] @relation("MentorAvailability")
   meetingsAsAdmin      Meeting[]      @relation("AdminMeetings")
+  
+  callsAsUser    Call[] @relation("userCalls")
+  callsAsMentor  Call[] @relation("mentorCalls")
 }
 
 model Availability {
@@ -36,6 +42,7 @@ model Availability {
   date      DateTime @db.Date
   startTime DateTime @map("start_time")
   endTime   DateTime @map("end_time")
+  timezone  String   @default("UTC")
   createdAt DateTime @default(now()) @map("created_at")
 
   user   User? @relation("UserAvailability", fields: [userId], references: [id], onDelete: Cascade)
@@ -60,8 +67,7 @@ model Meeting {
   startTime       DateTime @map("start_time")
   endTime         DateTime @map("end_time")
   meetLink        String?  @map("meet_link")
-  calendarEventId String?  @map("calendar_event_id")
-  googleEventId   String?  @map("google_event_id")
+  
   createdAt       DateTime @default(now()) @map("created_at")
 
   admin        User                 @relation("AdminMeetings", fields: [adminId], references: [id], onDelete: Cascade)
@@ -77,4 +83,42 @@ model MeetingParticipant {
 
   @@unique([meetingId, email])
   @@map("meeting_participants")
+}
+
+model CallType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  defaultTags String[]
+  
+  calls Call[]
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("call_types")
+}
+
+model Call {
+  id           String   @id @default(uuid())
+  
+  userId       String   @map("user_id")
+  user         User     @relation("userCalls", fields: [userId], references: [id], onDelete: Cascade)
+  
+  mentorId     String   @map("mentor_id")
+  mentor       User     @relation("mentorCalls", fields: [mentorId], references: [id], onDelete: Cascade)
+  
+  callTypeId   String   @map("call_type_id")
+  callType     CallType @relation(fields: [callTypeId], references: [id])
+  
+  scheduledTime DateTime @map("scheduled_time")
+  status        String   @default("scheduled")
+  notes         String?
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@index([userId])
+  @@index([mentorId])
+  @@index([callTypeId])
+  @@map("calls")
 }

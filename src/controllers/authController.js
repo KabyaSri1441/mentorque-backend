@@ -16,7 +16,7 @@ function createToken(user) {
 
 export async function register(req, res, next) {
   try {
-    const { name, email, password, role = "USER", timezone = "UTC" } = req.body;
+    const { name, email, password, role = "USER", timezone = "UTC", tags = [], description = "" } = req.body;
     if (!name?.trim() || !email?.trim() || !password) {
       return res.status(400).json({ error: "Name, email and password are required" });
     }
@@ -40,8 +40,19 @@ export async function register(req, res, next) {
         password: hashed,
         role: role || "USER",
         timezone: timezone === "IST" ? "IST" : "UTC",
+        tags: Array.isArray(tags) ? tags : [],
+        description: description || null,
       },
-      select: { id: true, name: true, email: true, role: true, timezone: true, createdAt: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        role: true, 
+        timezone: true, 
+        tags: true,
+        description: true,
+        createdAt: true 
+      },
     });
     const token = createToken({ id: user.id, role: user.role, email: user.email });
     res.status(201).json({ user, token });
@@ -58,14 +69,24 @@ export async function login(req, res, next) {
     }
     const user = await prisma.user.findUnique({
       where: { email: email.trim().toLowerCase() },
-      select: { id: true, name: true, email: true, password: true, role: true, timezone: true, createdAt: true, googleRefreshToken: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        password: true, 
+        role: true, 
+        timezone: true, 
+        tags: true,
+        description: true,
+        createdAt: true 
+      },
     });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
     const token = createToken(user);
-    const { password: _p, googleRefreshToken, ...safe } = user;
-    res.json({ user: { ...safe, hasGoogleConnected: !!googleRefreshToken }, token });
+    const { password: _p, ...safe } = user;
+    res.json({ user: safe, token });
   } catch (e) {
     next(e);
   }
@@ -75,11 +96,19 @@ export async function me(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, name: true, email: true, role: true, timezone: true, createdAt: true, googleRefreshToken: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        role: true, 
+        timezone: true, 
+        tags: true,
+        description: true,
+        createdAt: true 
+      },
     });
     if (!user) return res.status(404).json({ error: "User not found" });
-    const { googleRefreshToken, ...safe } = user;
-    res.json({ user: { ...safe, hasGoogleConnected: !!googleRefreshToken } });
+    res.json({ user });
   } catch (e) {
     next(e);
   }

@@ -20,9 +20,7 @@
     "googleapis": "^144.0.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.7.2",
+    "prisma": "^5.22.0",
     "uuid": "^10.0.0"
-  },
-  "devDependencies": {
-    "prisma": "^5.22.0"
   }
 }

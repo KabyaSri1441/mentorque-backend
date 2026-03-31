@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
-// Must match Mentorque platform JWT_SECRET (used for sso-token and admin/mentor JWTs)
+
 const MAIN_SITE_JWT_SECRET =
   process.env.MAIN_SITE_JWT_SECRET || "your-secret-key-change-in-production";
 
@@ -17,39 +17,25 @@ function getDecodedToken(token) {
     }
   })();
 
-  console.log("[auth] isPlatformShape:", isPlatformShape);
-
   if (isPlatformShape && MAIN_SITE_JWT_SECRET) {
     try {
-      const result = jwt.verify(token, MAIN_SITE_JWT_SECRET);
-      console.log("[auth] Verified with MAIN_SITE_JWT_SECRET ✓");
-      return result;
+      return jwt.verify(token, MAIN_SITE_JWT_SECRET);
     } catch (e1) {
-      console.error("[auth] MAIN_SITE_JWT_SECRET verify failed:", e1.message);
       try {
-        const result = jwt.verify(token, JWT_SECRET);
-        console.log("[auth] Verified with JWT_SECRET ✓");
-        return result;
+        return jwt.verify(token, JWT_SECRET);
       } catch (e2) {
-        console.error("[auth] JWT_SECRET verify failed:", e2.message);
         return null;
       }
     }
   }
 
   try {
-    const result = jwt.verify(token, JWT_SECRET);
-    console.log("[auth] Verified with JWT_SECRET (non-platform shape) ✓");
-    return result;
+    return jwt.verify(token, JWT_SECRET);
   } catch (e1) {
-    console.error("[auth] JWT_SECRET verify failed:", e1.message);
     if (MAIN_SITE_JWT_SECRET) {
       try {
-        const result = jwt.verify(token, MAIN_SITE_JWT_SECRET);
-        console.log("[auth] Verified with MAIN_SITE_JWT_SECRET (fallback) ✓");
-        return result;
+        return jwt.verify(token, MAIN_SITE_JWT_SECRET);
       } catch (e2) {
-        console.error("[auth] MAIN_SITE_JWT_SECRET fallback verify failed:", e2.message);
         return null;
       }
     }
@@ -74,19 +60,14 @@ export async function authenticate(req, res, next) {
     return res.status(401).json({ error: "Authentication required" });
   }
 
-  console.log("[auth] Verifying token, prefix:", token?.slice(0, 20));
-
   const decoded = getDecodedToken(token);
   if (!decoded) {
-    console.error("[auth] All verification attempts failed for token prefix:", token?.slice(0, 20));
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 
   const email = (decoded.email || "").trim().toLowerCase();
   const role = roleFromDecoded(decoded);
   const idFromToken = decoded.userId || decoded.id;
-
-  console.log("[auth] Decoded email:", email, "role:", role);
 
   if (!email) {
     return res.status(401).json({ error: "Invalid token: missing email" });
@@ -121,6 +102,16 @@ export async function authenticate(req, res, next) {
 
   next();
 }
+
+
+export const authMiddleware = authenticate;
+
+export const adminOnly = (req, res, next) => {
+  if (req.userRole !== "ADMIN") {
+    return res.status(403).json({ error: "Admin only" });
+  }
+  next();
+};
 
 export function requireRole(...roles) {
   return (req, res, next) => {
