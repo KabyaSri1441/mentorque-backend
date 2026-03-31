@@ -11,7 +11,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 import usersRouter from "./routes/users.js";
 import mentorsRouter from "./routes/mentors.js";
-import availabilityRouter from "./routes/availability.js";  // ✅ only once
+import availabilityRouter from "./routes/availability.js";
 import callsRouter from "./routes/calls.js";
 import callTypesRouter from "./routes/callTypes.js";
 
@@ -19,6 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 const allowedOrigins = [
+  "https://mentorque-frontend-z7tmsm21b-kabyasri1441s-projects.vercel.app",
   "https://availabilitytrackerfrontend.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
@@ -27,6 +28,23 @@ const allowedOrigins = [
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    message: "Mentorque API is running",
+    status: "ok",
+    version: "1.0.0",
+    endpoints: {
+      auth: "/api/auth/login",
+      users: "/api/users",
+      mentors: "/api/mentors",
+      availability: "/api/availability",
+      calls: "/api/calls",
+      callTypes: "/api/call-types",
+    }
+  });
+});
 
 app.use("/api/auth", (req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
@@ -66,7 +84,7 @@ app.post("/debug-token", (req, res) => {
 
 app.use("/api/users", usersRouter);
 app.use("/api/mentors", mentorsRouter);
-app.use("/api/availability", availabilityRouter);  // ✅ only registered once
+app.use("/api/availability", availabilityRouter);
 app.use("/api/calls", callsRouter);
 app.use("/api/call-types", callTypesRouter);
 
